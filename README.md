@@ -16,6 +16,7 @@ If you enjoy this tool, please consider giving it a star ⭐️ on GitHub! Also 
 - [🔧 Customization](#-customization)
   - [Inputs](#inputs)
   - [Output Params](#output-params)
+- [💡 Inspiration](#inspiration)
 - [🔗 Links](#-links)
 
 ## How does it work?
@@ -193,6 +194,19 @@ example
     echo "Package versions: ${{ steps.lazy-release.outputs.my-package_version }}"
 ```
 
+## 💡Inspiration
+
+This project was inspired by...
+- [changelogen](https://github.com/unjs/changelogen)
+  - Using emojis, compare changes
+- [changesets](https://github.com/changesets/changesets)
+  - Gave me ideas on how to handle versioning for monorepos + providing a status comment
+  - Idea of using a release PR
+- [vite](https://github.com/vitejs/vite)
+  - Adding a date to the changelog
+  - Gave me the idea of how to show breaking changes in the changelog
+
 ## 🔗 Links
 
 - [Comparison of Similar Tools](docs/comparison-of-similar-tools.md)
+
