@@ -29056,7 +29056,7 @@ function generateMarkdown(changedPackageInfos, indirectPackageInfos, changelogs,
     markdown += `### \u2764\uFE0F Contributors
 `;
     for (const contributor of contributors) {
-      markdown += `- ${contributor.name} (@${contributor.username})
+      markdown += `- ${contributor.name} ([@${contributor.username}](https://github.com/${contributor.username}))
 `;
     }
   }

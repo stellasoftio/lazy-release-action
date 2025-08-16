@@ -115,7 +115,7 @@ export function generateMarkdown(
     markdown += `### ❤️ Contributors\n`;
 
     for (const contributor of contributors) {
-      markdown += `- ${contributor.name} (@${contributor.username})\n`;
+      markdown += `- ${contributor.name} ([@${contributor.username}](https://github.com/${contributor.username}))\n`;
     }
   }
 
