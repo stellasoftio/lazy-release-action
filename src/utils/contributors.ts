@@ -7,6 +7,10 @@ export interface Contributor {
   email?: string;
 }
 
+function isBot(contributor: Contributor): boolean {
+  return contributor.username.includes('[bot]') || contributor.email?.includes('[bot]') || false;
+}
+
 export async function getContributorsFromCommits(commits: Commit[]): Promise<Contributor[]> {
   const contributorsMap = new Map<string, Contributor>();
   for (const commit of commits) {
@@ -25,6 +29,11 @@ export async function getContributorsFromCommits(commits: Commit[]): Promise<Con
   }
 
   for (const contributor of contributorsMap.values()) {
+    // Skip API calls for bots
+    if (isBot(contributor)) {
+      continue;
+    }
+
     if (contributor.email) {
       const result = await findUserByQuery(contributor.email);
       if (result?.user.username) {
@@ -40,6 +49,7 @@ export async function getContributorsFromCommits(commits: Commit[]): Promise<Con
     }
   }
 
-  const contributors = Array.from(contributorsMap.values()).filter((contributor) => contributor.username && contributor.name);
+  const contributors = Array.from(contributorsMap.values())
+    .filter((contributor) => contributor.username && contributor.name && !isBot(contributor));
   return contributors;
 }

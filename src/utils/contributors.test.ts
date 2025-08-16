@@ -391,4 +391,176 @@ describe('getContributorsFromCommits', () => {
     expect(mockFindUserByQuery).toHaveBeenCalledWith('test@example.com');
     expect(mockFindUserByUsername).toHaveBeenCalledWith('actualtestuser');
   });
+
+  it('should filter out bot contributors by username', async () => {
+    const commits: Commit[] = [
+      {
+        hash: 'abc123',
+        author: 'dependabot[bot]',
+        email: 'dependabot@github.com',
+        subject: 'Bump dependency',
+      },
+      {
+        hash: 'def456',
+        author: 'humanuser',
+        email: 'human@example.com',
+        subject: 'Real commit',
+      },
+    ];
+
+    // Only mock API calls for the human user
+    mockFindUserByQuery.mockResolvedValue({
+      user: {
+        id: 2,
+        username: 'humanuser',
+        avatar: 'avatar2.png',
+      },
+    });
+
+    mockFindUserByUsername.mockResolvedValue({
+      user: {
+        id: 2,
+        username: 'humanuser',
+        name: 'Human User',
+      },
+    });
+
+    const result = await getContributorsFromCommits(commits);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      username: 'humanuser',
+      name: 'Human User',
+      email: 'human@example.com',
+    });
+
+    // API should only be called for the human user
+    expect(mockFindUserByQuery).toHaveBeenCalledTimes(1);
+    expect(mockFindUserByQuery).toHaveBeenCalledWith('human@example.com');
+    expect(mockFindUserByUsername).toHaveBeenCalledTimes(1);
+    expect(mockFindUserByUsername).toHaveBeenCalledWith('humanuser');
+  });
+
+  it('should filter out bot contributors by email', async () => {
+    const commits: Commit[] = [
+      {
+        hash: 'abc123',
+        author: 'someuser',
+        email: 'noreply[bot]@github.com',
+        subject: 'Bot commit',
+      },
+      {
+        hash: 'def456',
+        author: 'humanuser',
+        email: 'human@example.com',
+        subject: 'Real commit',
+      },
+    ];
+
+    // Only mock API calls for the human user
+    mockFindUserByQuery.mockResolvedValue({
+      user: {
+        id: 2,
+        username: 'humanuser',
+        avatar: 'avatar2.png',
+      },
+    });
+
+    mockFindUserByUsername.mockResolvedValue({
+      user: {
+        id: 2,
+        username: 'humanuser',
+        name: 'Human User',
+      },
+    });
+
+    const result = await getContributorsFromCommits(commits);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      username: 'humanuser',
+      name: 'Human User',
+      email: 'human@example.com',
+    });
+
+    // API should only be called for the human user
+    expect(mockFindUserByQuery).toHaveBeenCalledTimes(1);
+    expect(mockFindUserByQuery).toHaveBeenCalledWith('human@example.com');
+    expect(mockFindUserByUsername).toHaveBeenCalledTimes(1);
+    expect(mockFindUserByUsername).toHaveBeenCalledWith('humanuser');
+  });
+
+  it('should filter out contributors with [bot] in both username and email', async () => {
+    const commits: Commit[] = [
+      {
+        hash: 'abc123',
+        author: 'github-actions[bot]',
+        email: 'github-actions[bot]@users.noreply.github.com',
+        subject: 'Automated commit',
+      },
+    ];
+
+    const result = await getContributorsFromCommits(commits);
+
+    expect(result).toEqual([]);
+    // API functions should not be called for bots
+    expect(mockFindUserByQuery).not.toHaveBeenCalled();
+    expect(mockFindUserByUsername).not.toHaveBeenCalled();
+  });
+
+  it('should not call API functions for bot contributors', async () => {
+    const commits: Commit[] = [
+      {
+        hash: 'abc123',
+        author: 'dependabot[bot]',
+        email: 'dependabot@github.com',
+        subject: 'Bump dependency',
+      },
+      {
+        hash: 'def456',
+        author: 'normaluser',
+        email: 'user[bot]@example.com', // Bot email but normal username
+        subject: 'Normal commit',
+      },
+      {
+        hash: 'ghi789',
+        author: 'realuser',
+        email: 'real@example.com',
+        subject: 'Real commit',
+      },
+    ];
+
+    // Only mock the API calls for the real user
+    mockFindUserByQuery.mockResolvedValue({
+      user: {
+        id: 1,
+        username: 'realuser',
+        avatar: 'avatar.png',
+      },
+    });
+
+    mockFindUserByUsername.mockResolvedValue({
+      user: {
+        id: 1,
+        username: 'realuser',
+        name: 'Real User',
+      },
+    });
+
+    const result = await getContributorsFromCommits(commits);
+
+    // Should only return the real user
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      username: 'realuser',
+      name: 'Real User',
+      email: 'real@example.com',
+    });
+
+    // API should only be called for the real user (once for email, once for username)
+    expect(mockFindUserByQuery).toHaveBeenCalledTimes(1);
+    expect(mockFindUserByQuery).toHaveBeenCalledWith('real@example.com');
+    expect(mockFindUserByUsername).toHaveBeenCalledTimes(1);
+    expect(mockFindUserByUsername).toHaveBeenCalledWith('realuser');
+  });
 });
