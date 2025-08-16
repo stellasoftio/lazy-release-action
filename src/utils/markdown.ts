@@ -117,6 +117,8 @@ export function generateMarkdown(
     for (const contributor of contributors) {
       markdown += `- ${contributor.name} ([@${contributor.username}](https://github.com/${contributor.username}))\n`;
     }
+
+    markdown += '\n';
   }
 
   return markdown;

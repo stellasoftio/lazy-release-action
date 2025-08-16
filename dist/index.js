@@ -29059,6 +29059,7 @@ function generateMarkdown(changedPackageInfos, indirectPackageInfos, changelogs,
       markdown += `- ${contributor.name} ([@${contributor.username}](https://github.com/${contributor.username}))
 `;
     }
+    markdown += "\n";
   }
   return markdown;
 }
