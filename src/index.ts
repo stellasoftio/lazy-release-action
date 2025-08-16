@@ -21,6 +21,7 @@ import { createTags, publishPackages } from './core/publish';
 import { createGitHubRelease } from './core/release';
 import { createOrUpdatePRStatusComment } from './core/comments';
 import { ReleasePackageInfo } from './types';
+import { getContributorsFromCommits } from './utils/contributors';
 
 (async () => {
   init();
@@ -224,11 +225,14 @@ async function createOrUpdateReleasePR() {
     createOrUpdateChangelog(pkgInfo, []);
   });
 
+  const contributors = await getContributorsFromCommits(commits);
+
   // generate markdown from changelogs
   const markdown = generateMarkdown(
     changedPackageInfos,
     indirectPackageInfos,
-    changelogs
+    changelogs,
+    contributors,
   );
 
   console.log('Generated markdown:');
