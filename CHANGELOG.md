@@ -1,3 +1,9 @@
+## 0.7.0 (2025-08-17)
+
+### 🚀 New Features
+- Added a contributors section in the GitHub release notes ([#57](https://github.com/stellasoftio/lazy-release-action/pull/57))
+
+
 ## 0.6.0 (2025-07-19)
 
 ### 🚀 New Features
