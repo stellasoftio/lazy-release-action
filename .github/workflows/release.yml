@@ -1,6 +1,9 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     types: [closed]
     branches:
@@ -13,17 +16,23 @@ permissions:
 
 jobs:
   release:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.merged == true
+    if: >
+      github.repository == 'stellasoftio/lazy-release-action' &&
+      (
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'pull_request' && 
+         github.event.pull_request.head.repo.full_name == github.repository && 
+         github.event.pull_request.merged == true)
+      )
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Create Release PR or Release
-      uses: ./
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        publish-major-tag: true
+      - name: Create Release PR or Release
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          publish-major-tag: true
