@@ -30193,10 +30193,10 @@ async function getContributorsFromCommits(commits) {
 // src/index.ts
 (async () => {
   init();
-  if (import_github5.context.payload.pull_request?.merged) {
+  if (import_github5.context.eventName === "push") {
     checkoutBranch(DEFAULT_BRANCH);
     console.log(
-      `Pull request #${import_github5.context.payload.pull_request.number} has been merged.`
+      `Push event detected for commit ${import_github5.context.payload.after}.`
     );
     const isRelease = await isLastCommitAReleaseCommit();
     if (isRelease) {

@@ -26,12 +26,12 @@ import { getContributorsFromCommits } from './utils/contributors';
 (async () => {
   init();
 
-  if (context.payload.pull_request?.merged) {
+  if (context.eventName === 'push') {
     // checkout git branch
     checkoutBranch(DEFAULT_BRANCH);
 
     console.log(
-      `Pull request #${context.payload.pull_request.number} has been merged.`
+      `Push event detected for commit ${context.payload.after}.`
     );
 
     // check if the release PR has been merged
