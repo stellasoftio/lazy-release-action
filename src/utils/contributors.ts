@@ -12,23 +12,36 @@ function isBot(contributor: Contributor): boolean {
 }
 
 export async function getContributorsFromCommits(commits: Commit[]): Promise<Contributor[]> {
-  const contributorsMap = new Map<string, Contributor>();
+  const contributors: Contributor[] = []
+
   for (const commit of commits) {
-    if (contributorsMap.has(commit.author.toLowerCase())) {
-      const existingContributor = contributorsMap.get(commit.author);
-      if (existingContributor && commit.email) {
-        existingContributor.email = commit.email;
+    const author = commit.author;
+    const email = commit.email;
+
+    let existingContributor: Contributor | undefined = undefined;
+
+    if (email) {
+      existingContributor = contributors.find(c => c.email?.toLowerCase() === email.toLowerCase());
+      if (existingContributor) {
+        continue;
       }
-    } else if (commit.author) {
-      const contributor: Contributor = {
-        username: commit.author,
-        email: commit.email,
-      };
-      contributorsMap.set(commit.author.toLowerCase(), contributor);
     }
+
+    existingContributor = contributors.find(c => c.username?.toLowerCase() === author.toLowerCase());
+    if (existingContributor) {
+      if (email && !existingContributor.email) {
+        existingContributor.email = email;
+      }
+      continue;
+    }
+
+    contributors.push({
+      username: author,
+      email: email,
+    });
   }
 
-  for (const contributor of contributorsMap.values()) {
+  for (const contributor of contributors) {
     // Skip API calls for bots
     if (isBot(contributor)) {
       continue;
@@ -49,7 +62,7 @@ export async function getContributorsFromCommits(commits: Commit[]): Promise<Con
     }
   }
 
-  const contributors = Array.from(contributorsMap.values())
+  const filteredContributors = contributors
     .filter((contributor) => contributor.username && contributor.name && !isBot(contributor));
-  return contributors;
+  return filteredContributors;
 }

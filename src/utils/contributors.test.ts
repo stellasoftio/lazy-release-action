@@ -311,15 +311,20 @@ describe('getContributorsFromCommits', () => {
 
     const result = await getContributorsFromCommits(commits);
 
-    expect(result).toHaveLength(1);
+    expect(result).toHaveLength(2);
     expect(result[0]).toEqual({
       username: 'validuser',
       name: 'Valid User',
-      email: 'valid@example.com',
+      email: 'test@example.com',
     });
+      expect(result[1]).toEqual({
+        username: 'validuser',
+        name: 'Valid User',
+        email: 'valid@example.com',
+      });
     // Should only call APIs for the valid user
-    expect(mockFindUserByQuery).toHaveBeenCalledTimes(1);
-    expect(mockFindUserByUsername).toHaveBeenCalledTimes(1);
+    expect(mockFindUserByQuery).toHaveBeenCalledTimes(2);
+    expect(mockFindUserByUsername).toHaveBeenCalledTimes(2);
   });
 
   it('should update email for existing contributor when processing multiple commits', async () => {

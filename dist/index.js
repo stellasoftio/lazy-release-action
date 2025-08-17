@@ -30146,22 +30146,30 @@ function isBot(contributor) {
   return contributor.username.includes("[bot]") || contributor.email?.includes("[bot]") || false;
 }
 async function getContributorsFromCommits(commits) {
-  const contributorsMap = /* @__PURE__ */ new Map();
+  const contributors = [];
   for (const commit of commits) {
-    if (contributorsMap.has(commit.author.toLowerCase())) {
-      const existingContributor = contributorsMap.get(commit.author);
-      if (existingContributor && commit.email) {
-        existingContributor.email = commit.email;
+    const author = commit.author;
+    const email = commit.email;
+    let existingContributor = void 0;
+    if (email) {
+      existingContributor = contributors.find((c) => c.email?.toLowerCase() === email.toLowerCase());
+      if (existingContributor) {
+        continue;
       }
-    } else if (commit.author) {
-      const contributor = {
-        username: commit.author,
-        email: commit.email
-      };
-      contributorsMap.set(commit.author.toLowerCase(), contributor);
     }
+    existingContributor = contributors.find((c) => c.username?.toLowerCase() === author.toLowerCase());
+    if (existingContributor) {
+      if (email && !existingContributor.email) {
+        existingContributor.email = email;
+      }
+      continue;
+    }
+    contributors.push({
+      username: author,
+      email
+    });
   }
-  for (const contributor of contributorsMap.values()) {
+  for (const contributor of contributors) {
     if (isBot(contributor)) {
       continue;
     }
@@ -30178,8 +30186,8 @@ async function getContributorsFromCommits(commits) {
       }
     }
   }
-  const contributors = Array.from(contributorsMap.values()).filter((contributor) => contributor.username && contributor.name && !isBot(contributor));
-  return contributors;
+  const filteredContributors = contributors.filter((contributor) => contributor.username && contributor.name && !isBot(contributor));
+  return filteredContributors;
 }
 
 // src/index.ts
