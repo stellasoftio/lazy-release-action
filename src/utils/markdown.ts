@@ -5,11 +5,13 @@ import { getPackageNameWithoutScope } from "./package";
 import { getDirectoryNameFromPath } from "./path";
 import { getPullRequestUrl } from "./github";
 import { getTagName } from "./tag";
+import { Contributor } from "./contributors";
 
 export function generateMarkdown(
   changedPackageInfos: PackageInfo[],
   indirectPackageInfos: PackageInfo[],
   changelogs: Changelog[],
+  contributors: Contributor[] = []
 ): string {
 
   let markdown = '# 👉 Changelog\n\n';
@@ -108,6 +110,16 @@ export function generateMarkdown(
     // if the package is a dependency, we don't have changelogs for it
     markdown += `📦 Updated due to dependency changes\n\n`;
   });
+
+  if (contributors.length) {
+    markdown += `### ❤️ Contributors\n`;
+
+    for (const contributor of contributors) {
+      markdown += `- ${contributor.name} ([@${contributor.username}](https://github.com/${contributor.username}))\n`;
+    }
+
+    markdown += '\n';
+  }
 
   return markdown;
 }

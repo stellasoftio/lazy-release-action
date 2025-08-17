@@ -13934,7 +13934,7 @@ var require_fetch = __commonJS({
         this.emit("terminated", error);
       }
     };
-    function fetch(input, init2 = {}) {
+    function fetch2(input, init2 = {}) {
       webidl.argumentLengthCheck(arguments, 1, { header: "globalThis.fetch" });
       const p = createDeferredPromise();
       let requestObject;
@@ -14864,7 +14864,7 @@ var require_fetch = __commonJS({
       }
     }
     module2.exports = {
-      fetch,
+      fetch: fetch2,
       Fetch,
       fetching,
       finalizeAndReportTiming
@@ -18120,7 +18120,7 @@ var require_undici = __commonJS({
     module2.exports.getGlobalDispatcher = getGlobalDispatcher;
     if (util.nodeMajor > 16 || util.nodeMajor === 16 && util.nodeMinor >= 8) {
       let fetchImpl = null;
-      module2.exports.fetch = async function fetch(resource) {
+      module2.exports.fetch = async function fetch2(resource) {
         if (!fetchImpl) {
           fetchImpl = require_fetch().fetch;
         }
@@ -19632,16 +19632,16 @@ var require_dist_node5 = __commonJS({
       let headers = {};
       let status;
       let url;
-      let { fetch } = globalThis;
+      let { fetch: fetch2 } = globalThis;
       if ((_b = requestOptions.request) == null ? void 0 : _b.fetch) {
-        fetch = requestOptions.request.fetch;
+        fetch2 = requestOptions.request.fetch;
       }
-      if (!fetch) {
+      if (!fetch2) {
         throw new Error(
           "fetch is not set. Please pass a fetch implementation as new Octokit({ request: { fetch }}). Learn more at https://github.com/octokit/octokit.js/#fetch-missing"
         );
       }
-      return fetch(requestOptions.url, {
+      return fetch2(requestOptions.url, {
         method: requestOptions.method,
         body: requestOptions.body,
         redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
@@ -28980,7 +28980,7 @@ function getMajorTagName(version) {
 }
 
 // src/utils/markdown.ts
-function generateMarkdown(changedPackageInfos, indirectPackageInfos, changelogs) {
+function generateMarkdown(changedPackageInfos, indirectPackageInfos, changelogs, contributors = []) {
   let markdown = "# \u{1F449} Changelog\n\n";
   changedPackageInfos.forEach((pkg) => {
     const pkgNameWithoutScope = getPackageNameWithoutScope(pkg.name);
@@ -29052,6 +29052,15 @@ function generateMarkdown(changedPackageInfos, indirectPackageInfos, changelogs)
 
 `;
   });
+  if (contributors.length) {
+    markdown += `### \u2764\uFE0F Contributors
+`;
+    for (const contributor of contributors) {
+      markdown += `- ${contributor.name} ([@${contributor.username}](https://github.com/${contributor.username}))
+`;
+    }
+    markdown += "\n";
+  }
   return markdown;
 }
 function getCompareChangesMarkdownLink(pkg) {
@@ -29254,11 +29263,13 @@ async function getRecentCommits(ignoreLastest = false) {
   console.log("Getting recent commits...");
   console.log("Fetching commits since last release commit...");
   const HASH_SEPARATOR = "<HASH_SEPARATOR>";
+  const AUTHOR_SEPARATOR = "<AUTHOR_SEPARATOR>";
+  const EMAIL_SEPARATOR = "<EMAIL_SEPARATOR>";
   const SUBJECT_SEPARATOR = "<SUBJECT_SEPARATOR>";
   const COMMIT_SEPARATOR = "<COMMIT_SEPARATOR>";
   const args = [
     "log",
-    `--pretty=format:"%h${HASH_SEPARATOR}%s${SUBJECT_SEPARATOR}%b${COMMIT_SEPARATOR}"`
+    `--pretty=format:"%h${HASH_SEPARATOR}%an${AUTHOR_SEPARATOR}%ae${EMAIL_SEPARATOR}%s${SUBJECT_SEPARATOR}%b${COMMIT_SEPARATOR}"`
   ];
   if (END_COMMIT) {
     args.push(`${END_COMMIT}^..HEAD`);
@@ -29308,8 +29319,16 @@ async function getRecentCommits(ignoreLastest = false) {
       console.log(`Skipping reverted commit: ${hash}`);
       continue;
     }
-    const subject = item.substring(
+    const author = item.substring(
       item.indexOf(HASH_SEPARATOR) + HASH_SEPARATOR.length,
+      item.indexOf(AUTHOR_SEPARATOR)
+    );
+    const email = item.substring(
+      item.indexOf(AUTHOR_SEPARATOR) + AUTHOR_SEPARATOR.length,
+      item.indexOf(EMAIL_SEPARATOR)
+    );
+    const subject = item.substring(
+      item.indexOf(EMAIL_SEPARATOR) + EMAIL_SEPARATOR.length,
       item.indexOf(SUBJECT_SEPARATOR)
     );
     if (!subject) {
@@ -29346,10 +29365,22 @@ async function getRecentCommits(ignoreLastest = false) {
       console.log(`Skipping revert commit: ${hash}`);
       continue;
     }
-    commits.push({ hash, subject: subject.trim(), body: body.trim() });
+    commits.push({
+      hash,
+      author: author.trim(),
+      email: email.trim(),
+      subject: subject.trim(),
+      body: body.trim()
+    });
   }
   console.log("Commits since last release:");
-  commits.forEach((commit) => console.log(`${commit.hash}: ${commit.subject}`));
+  commits.forEach((commit) => {
+    console.log(`hash=${commit.hash}
+author=${commit.author}
+email=${commit.email}
+subject=${commit.subject}
+`);
+  });
   const filteredCommits = commits.filter(
     (commit) => CONVENTIONAL_COMMITS_PATTERN.test(commit.subject) || commit.body && hasChangelogSection(commit.body)
   );
@@ -30094,6 +30125,71 @@ async function createOrUpdatePRStatusComment(shouldCreateSnapshot = false) {
   }
 }
 
+// src/api/ungh.ts
+async function findUserByQuery(query) {
+  const response = await fetch(`https://ungh.cc/users/find/${query}`);
+  if (response.ok) {
+    return await response.json();
+  }
+  return void 0;
+}
+async function findUserByUsername(username) {
+  const response = await fetch(`https://ungh.cc/users/${username}`);
+  if (response.ok) {
+    return await response.json();
+  }
+  return void 0;
+}
+
+// src/utils/contributors.ts
+function isBot(contributor) {
+  return contributor.username.includes("[bot]") || contributor.email?.includes("[bot]") || false;
+}
+async function getContributorsFromCommits(commits) {
+  const contributors = [];
+  for (const commit of commits) {
+    const author = commit.author;
+    const email = commit.email;
+    let existingContributor = void 0;
+    if (email) {
+      existingContributor = contributors.find((c) => c.email?.toLowerCase() === email.toLowerCase());
+      if (existingContributor) {
+        continue;
+      }
+    }
+    existingContributor = contributors.find((c) => c.username?.toLowerCase() === author.toLowerCase());
+    if (existingContributor) {
+      if (email && !existingContributor.email) {
+        existingContributor.email = email;
+      }
+      continue;
+    }
+    contributors.push({
+      username: author,
+      email
+    });
+  }
+  for (const contributor of contributors) {
+    if (isBot(contributor)) {
+      continue;
+    }
+    if (contributor.email) {
+      const result = await findUserByQuery(contributor.email);
+      if (result?.user.username) {
+        contributor.username = result.user.username;
+      }
+    }
+    if (contributor.username) {
+      const result = await findUserByUsername(contributor.username);
+      if (result?.user.name) {
+        contributor.name = result.user.name;
+      }
+    }
+  }
+  const filteredContributors = contributors.filter((contributor) => contributor.username && contributor.name && !isBot(contributor));
+  return filteredContributors;
+}
+
 // src/index.ts
 (async () => {
   init();
@@ -30228,10 +30324,12 @@ async function createOrUpdateReleasePR() {
     updateIndirectPackageJsonFile(pkgInfo, allPkgInfos);
     createOrUpdateChangelog(pkgInfo, []);
   });
+  const contributors = await getContributorsFromCommits(commits);
   const markdown = generateMarkdown(
     changedPackageInfos,
     indirectPackageInfos,
-    changelogs
+    changelogs,
+    contributors
   );
   console.log("Generated markdown:");
   console.log(markdown);

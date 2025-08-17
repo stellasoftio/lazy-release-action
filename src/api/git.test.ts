@@ -43,13 +43,13 @@ describe('getRecentCommits', () => {
   });
 
   it('should return commits before release commit', async () => {
-    const gitOutput = `abc123<HASH_SEPARATOR>feat: add new feature<SUBJECT_SEPARATOR>
+    const gitOutput = `abc123<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>feat: add new feature<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>
-def456<HASH_SEPARATOR>fix: bug fix<SUBJECT_SEPARATOR>
+def456<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>fix: bug fix<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>
-ghi789<HASH_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
+ghi789<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
 <COMMIT_SEPARATOR>
-jkl012<HASH_SEPARATOR>old commit<SUBJECT_SEPARATOR>
+jkl012<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>old commit<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>`;
 
     mockExecFileSync.mockImplementation(() => {
@@ -59,17 +59,17 @@ jkl012<HASH_SEPARATOR>old commit<SUBJECT_SEPARATOR>
     const result = await getRecentCommits();
 
     expect(result).toEqual([
-      { hash: 'abc123', subject: 'feat: add new feature', body: '' },
-      { hash: 'def456', subject: 'fix: bug fix', body: '' },
+      { hash: 'abc123', author: 'testuser', email: 'test@test.com', subject: 'feat: add new feature', body: '' },
+      { hash: 'def456', author: 'testuser', email: 'test@test.com', subject: 'fix: bug fix', body: '' },
     ]);
   });
 
   it('should ignore latest commit when ignoreLatest is true', async () => {
-    const gitOutput = `abc123<HASH_SEPARATOR>feat: latest commit<SUBJECT_SEPARATOR>
+    const gitOutput = `abc123<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>feat: latest commit<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>
-def456<HASH_SEPARATOR>fix: previous commit<SUBJECT_SEPARATOR>
+def456<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>fix: previous commit<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>
-ghi789<HASH_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
+ghi789<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
 <COMMIT_SEPARATOR>`;
 
     mockExecFileSync.mockImplementation(() => {
@@ -79,16 +79,16 @@ ghi789<HASH_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
     const result = await getRecentCommits(true);
 
     expect(result).toEqual([
-      { hash: 'def456', subject: 'fix: previous commit', body: '' },
+      { hash: 'def456', author: 'testuser', email: 'test@test.com', subject: 'fix: previous commit', body: '' },
     ]);
   });
 
   it('should skip release commit that is reverted', async () => {
-    const gitOutput = `abc123<HASH_SEPARATOR>Revert some changes<SUBJECT_SEPARATOR>Reverts test-owner/test-repo#123
+    const gitOutput = `abc123<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>Revert some changes<SUBJECT_SEPARATOR>Reverts test-owner/test-repo#123
 <COMMIT_SEPARATOR>
-def456<HASH_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
+def456<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
 <COMMIT_SEPARATOR>
-ghi789<HASH_SEPARATOR>feat: some feature<SUBJECT_SEPARATOR>
+ghi789<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>feat: some feature<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>`;
 
     mockExecFileSync.mockImplementation(() => {
@@ -98,20 +98,20 @@ ghi789<HASH_SEPARATOR>feat: some feature<SUBJECT_SEPARATOR>
     const result = await getRecentCommits();
 
     expect(result).toEqual([
-      { hash: 'ghi789', subject: 'feat: some feature', body: '' },
+      { hash: 'ghi789', author: 'testuser', email: 'test@test.com', subject: 'feat: some feature', body: '' },
     ]);
   });
 
   it('should exclude reverted commits', async () => {
-    const gitOutput = `abc123<HASH_SEPARATOR>feat: add new feature<SUBJECT_SEPARATOR>
+    const gitOutput = `abc123<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>feat: add new feature<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>
-cc88b03<HASH_SEPARATOR>Revert "feat: add support for snapshots" (#5)<SUBJECT_SEPARATOR>Reverts stellasoftio/lazy-release-action#4
+cc88b03<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>Revert "feat: add support for snapshots" (#5)<SUBJECT_SEPARATOR>Reverts stellasoftio/lazy-release-action#4
 <COMMIT_SEPARATOR>
-b4ddfdb<HASH_SEPARATOR>feat: add support for snapshots (#4)<SUBJECT_SEPARATOR>
+b4ddfdb<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>feat: add support for snapshots (#4)<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>
-ghi789<HASH_SEPARATOR>fix: bug fix<SUBJECT_SEPARATOR>
+ghi789<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>fix: bug fix<SUBJECT_SEPARATOR>
 <COMMIT_SEPARATOR>
-jkl012<HASH_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
+jkl012<HASH_SEPARATOR>testuser<AUTHOR_SEPARATOR>test@test.com<EMAIL_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
 <COMMIT_SEPARATOR>`;
 
     mockExecFileSync.mockImplementation(() => {
@@ -121,8 +121,8 @@ jkl012<HASH_SEPARATOR>chore: release (#123)<SUBJECT_SEPARATOR>[release-action]
     const result = await getRecentCommits();
 
     expect(result).toEqual([
-      { hash: 'abc123', subject: 'feat: add new feature', body: '' },
-      { hash: 'ghi789', subject: 'fix: bug fix', body: '' },
+      { hash: 'abc123', author: 'testuser', email: 'test@test.com', subject: 'feat: add new feature', body: '' },
+      { hash: 'ghi789', author: 'testuser', email: 'test@test.com', subject: 'fix: bug fix', body: '' },
     ]);
   });
 
@@ -143,7 +143,7 @@ ghi789<HASH_SEPARATOR>fix: bug fix<SUBJECT_SEPARATOR>
       'git',
       [
         'log',
-        '--pretty=format:"%h<HASH_SEPARATOR>%s<SUBJECT_SEPARATOR>%b<COMMIT_SEPARATOR>"',
+        '--pretty=format:"%h<HASH_SEPARATOR>%an<AUTHOR_SEPARATOR>%ae<EMAIL_SEPARATOR>%s<SUBJECT_SEPARATOR>%b<COMMIT_SEPARATOR>"',
         'abc123^..HEAD',
       ],
       {
@@ -171,7 +171,7 @@ ghi789<HASH_SEPARATOR>fix: bug fix<SUBJECT_SEPARATOR>
       'git',
       [
         'log',
-        '--pretty=format:"%h<HASH_SEPARATOR>%s<SUBJECT_SEPARATOR>%b<COMMIT_SEPARATOR>"',
+        '--pretty=format:"%h<HASH_SEPARATOR>%an<AUTHOR_SEPARATOR>%ae<EMAIL_SEPARATOR>%s<SUBJECT_SEPARATOR>%b<COMMIT_SEPARATOR>"',
       ],
       {
         encoding: 'utf8',

@@ -146,6 +146,8 @@ export async function isLastCommitAReleaseCommit(): Promise<boolean> {
 
 export interface Commit {
   hash: string;
+  author: string;
+  email: string;
   subject: string;
   body?: string;
 }
@@ -156,13 +158,15 @@ export async function getRecentCommits(
   console.log('Getting recent commits...');
   console.log('Fetching commits since last release commit...');
 
-  const HASH_SEPARATOR = '<HASH_SEPARATOR>';
-  const SUBJECT_SEPARATOR = '<SUBJECT_SEPARATOR>';
-  const COMMIT_SEPARATOR = '<COMMIT_SEPARATOR>';
+const HASH_SEPARATOR = '<HASH_SEPARATOR>';
+const AUTHOR_SEPARATOR = '<AUTHOR_SEPARATOR>';
+const EMAIL_SEPARATOR = '<EMAIL_SEPARATOR>';
+const SUBJECT_SEPARATOR = '<SUBJECT_SEPARATOR>';
+const COMMIT_SEPARATOR = '<COMMIT_SEPARATOR>';
 
   const args = [
     'log',
-    `--pretty=format:"%h${HASH_SEPARATOR}%s${SUBJECT_SEPARATOR}%b${COMMIT_SEPARATOR}"`,
+    `--pretty=format:"%h${HASH_SEPARATOR}%an${AUTHOR_SEPARATOR}%ae${EMAIL_SEPARATOR}%s${SUBJECT_SEPARATOR}%b${COMMIT_SEPARATOR}"`,
   ];
 
   if (END_COMMIT) {
@@ -238,8 +242,18 @@ export async function getRecentCommits(
       continue;
     }
 
-    const subject = item.substring(
+    const author = item.substring(
       item.indexOf(HASH_SEPARATOR) + HASH_SEPARATOR.length,
+      item.indexOf(AUTHOR_SEPARATOR)
+    );
+
+    const email = item.substring(
+      item.indexOf(AUTHOR_SEPARATOR) + AUTHOR_SEPARATOR.length,
+      item.indexOf(EMAIL_SEPARATOR)
+    );
+
+    const subject = item.substring(
+      item.indexOf(EMAIL_SEPARATOR) + EMAIL_SEPARATOR.length,
       item.indexOf(SUBJECT_SEPARATOR)
     );
 
@@ -253,7 +267,7 @@ export async function getRecentCommits(
     if (issueNumber && revertedCommitHashes.has(issueNumber)) {
       console.log(`Skipping commit with reverted issue number: ${issueNumber}`);
       continue;
-    } 
+    }
 
     const body =
       item.substring(
@@ -289,11 +303,19 @@ export async function getRecentCommits(
       continue;
     }
 
-    commits.push({ hash, subject: subject.trim(), body: body.trim() });
+    commits.push({
+      hash,
+      author: author.trim(),
+      email: email.trim(),
+      subject: subject.trim(),
+      body: body.trim()
+    });
   }
 
   console.log('Commits since last release:');
-  commits.forEach((commit) => console.log(`${commit.hash}: ${commit.subject}`));
+  commits.forEach((commit) => {
+    console.log(`hash=${commit.hash}\nauthor=${commit.author}\nemail=${commit.email}\nsubject=${commit.subject}\n`);
+  });
 
   // Filter for commits containing "## Changelog"
   const filteredCommits = commits.filter(

@@ -76,6 +76,8 @@ describe('getChangelogFromCommits', () => {
         body: `## Changelog
         - feat(package-a): Some description
         - chore(package-a,package-b): Some description 2`,
+        author: 'testuser',
+        email: '',
       },
     ];
 
