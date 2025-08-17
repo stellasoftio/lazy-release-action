@@ -8,12 +8,31 @@ import {
   isLastCommitAReleaseCommit,
   setupGitConfig,
 } from './api/git';
-import { DEFAULT_BRANCH, GITHUB_TOKEN, NPM_TOKEN, RELEASE_BRANCH, RELEASE_PR_TITLE } from './constants';
+import {
+  DEFAULT_BRANCH,
+  GITHUB_TOKEN,
+  NPM_TOKEN,
+  RELEASE_BRANCH,
+  RELEASE_PR_TITLE,
+} from './constants';
 import * as githubApi from './api/github';
 import { context } from '@actions/github';
 import { getChangelogFromCommits } from './utils/changelog';
-import { bumpIndirectPackageVersion, getChangedPackageInfos, getPackageInfos, getPackageNameWithoutScope, getPackagePaths, updateIndirectPackageJsonFile, updatePackageJsonFile, updatePackageLockFiles } from './utils/package';
-import { appendReleaseIdToMarkdown, generateMarkdown, parseReleasePRBody } from './utils/markdown';
+import {
+  bumpIndirectPackageVersion,
+  getChangedPackageInfos,
+  getPackageInfos,
+  getPackageNameWithoutScope,
+  getPackagePaths,
+  updateIndirectPackageJsonFile,
+  updatePackageJsonFile,
+  updatePackageLockFiles,
+} from './utils/package';
+import {
+  appendReleaseIdToMarkdown,
+  generateMarkdown,
+  parseReleasePRBody,
+} from './utils/markdown';
 import { isPRTitleValid } from './utils/validation';
 import { applyNewVersion } from './core/version';
 import { createOrUpdateChangelog } from './core/changelog';
@@ -26,7 +45,23 @@ import { getContributorsFromCommits } from './utils/contributors';
 (async () => {
   init();
 
-  if (context.payload.pull_request?.merged) {
+  if (context.eventName === 'push') {
+    // push event is for creating or updating release PR
+
+    // checkout git branch
+    checkoutBranch(DEFAULT_BRANCH);
+
+    // check if the release PR has been merged
+    const isRelease = await isLastCommitAReleaseCommit();
+    if (isRelease) {
+      // only handle release on pull_request merged event
+      return;
+    }
+
+    // the regular PR has been merged, so we need to create a release PR
+    // create or update release PR
+    await createOrUpdateReleasePR();
+  } else if (context.payload.pull_request?.merged) {
     // checkout git branch
     checkoutBranch(DEFAULT_BRANCH);
 
@@ -40,11 +75,7 @@ import { getContributorsFromCommits } from './utils/contributors';
       await publish();
       return;
     }
-
-    // the regular PR has been merged, so we need to create a release PR
-    // create or update release PR
-    await createOrUpdateReleasePR();
-  } else if (!context.payload.pull_request?.merged) {
+  } else if (context.eventName === 'pull_request' && !context.payload.pull_request?.merged) {
     console.log(
       `Pull request #${context.payload.pull_request?.number} is not merged yet.`
     );
@@ -56,7 +87,7 @@ import { getContributorsFromCommits } from './utils/contributors';
       await createOrUpdatePRStatusComment(false);
       return;
     }
-  
+
     await createOrUpdatePRStatusComment(true);
   }
 })();
@@ -232,7 +263,7 @@ async function createOrUpdateReleasePR() {
     changedPackageInfos,
     indirectPackageInfos,
     changelogs,
-    contributors,
+    contributors
   );
 
   console.log('Generated markdown:');
